@@ -1,0 +1,8 @@
+# Single-stage: Build và chạy trực tiếp trên cùng 1 JDK Image
+FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /app
+COPY . .
+RUN ./gradlew bootJar
+RUN cp build/libs/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

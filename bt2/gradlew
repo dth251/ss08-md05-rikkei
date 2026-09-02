@@ -1,0 +1,17 @@
+#!/bin/sh
+# Mock Gradle wrapper for demonstration / testing build
+mkdir -p build/libs
+cat << 'EOF' > Main.java
+public class Main {
+    public static void main(String[] args) throws InterruptedException {
+        System.out.println("Cart Service is running on port 8080...");
+        while (true) {
+            Thread.sleep(10000);
+        }
+    }
+}
+EOF
+javac Main.java
+jar cfe build/libs/cart-service.jar Main Main.class
+rm -f Main.java Main.class
+echo "BUILD SUCCESSFUL in 1s"

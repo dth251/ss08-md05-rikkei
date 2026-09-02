@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  github-actions-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.runner
+    container_name: quickbite-ci-runner
+    restart: unless-stopped
+    environment:
+      # URL kho lưu trữ GitHub của bạn (ví dụ: https://github.com/username/repo)
+      - REPO_URL=${REPO_URL}
+      # Token đăng ký Runner lấy từ: Settings -> Actions -> Runners -> New self-hosted runner
+      - RUNNER_TOKEN=${RUNNER_TOKEN}
+      - RUNNER_NAME=${RUNNER_NAME:-quickbite-runner-dood}
+      - RUNNER_LABELS=${RUNNER_LABELS:-self-hosted,linux,x64,docker}
+      - RUNNER_GROUP=${RUNNER_GROUP:-Default}
+    volumes:
+      # =========================================================================
+      # GIẢI PHÁP SỬA LỖI (DooD - Docker-outside-of-Docker):
+      # Ánh xạ UNIX socket của Docker daemon từ máy Host vào bên trong container Runner.
+      # Giúp Docker CLI trong Runner có thể giao tiếp trực tiếp với Docker Daemon của Host.
+      # =========================================================================
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Runner cần quyền tương tác với Docker socket
+    user: root

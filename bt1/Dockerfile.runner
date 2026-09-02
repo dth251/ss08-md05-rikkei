@@ -1,0 +1,51 @@
+FROM ubuntu:22.04
+
+# Tránh prompt tương tác khi apt-get
+ENV DEBIAN_FRONTEND=noninteractive
+ENV RUNNER_VERSION=2.322.0
+
+# Cài đặt các gói cơ bản, curl, git, jq và Docker CLI
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    git \
+    jq \
+    sudo \
+    tar \
+    unzip \
+    gnupg \
+    lsb-release \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Cài đặt Docker CLI (để container có thể gọi lệnh docker qua socket của host)
+RUN install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    chmod a+r /etc/apt/keyrings/docker.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin && \
+    rm -rf /var/lib/apt/lists/*
+
+# Tạo thư mục runner và tải GitHub Actions Runner binary
+WORKDIR /actions-runner
+RUN curl -o actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz -L https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz && \
+    tar xzf ./actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz && \
+    rm actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz && \
+    ./bin/installdependencies.sh
+
+# Cho phép user runner chạy root mà không cần password
+RUN useradd -m runner && \
+    usermod -aG sudo runner && \
+    echo "%sudo ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    chown -R runner:runner /actions-runner
+
+# Copy script khởi chạy
+COPY entrypoint.sh /actions-runner/entrypoint.sh
+RUN chmod +x /actions-runner/entrypoint.sh
+
+ENTRYPOINT ["/actions-runner/entrypoint.sh"]

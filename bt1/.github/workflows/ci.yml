@@ -1,0 +1,44 @@
+name: QuickBite CI - Verify Docker Socket DooD
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build & Test on Self-Hosted DooD Runner
+    runs-on: self-hosted
+    steps:
+      - name: 1. Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: 2. Verify Docker Daemon Connectivity (DooD Verification)
+        run: |
+          echo "======================================================="
+          echo "Kiểm tra kết nối Docker CLI tới Docker Daemon của Host"
+          echo "======================================================="
+          docker --version
+          docker compose version
+          docker info
+
+      - name: 3. Test Building Docker Image
+        run: |
+          echo "======================================================="
+          echo "Thực hiện lệnh docker build để kiểm chứng"
+          echo "======================================================="
+          if [ -d "md05-session08/bt1/sample-app" ]; then
+            docker build -t quickbite-app:test -f md05-session08/bt1/sample-app/Dockerfile md05-session08/bt1/sample-app/
+          else
+            docker build -t quickbite-app:test -f sample-app/Dockerfile sample-app/
+          fi
+          docker images | grep quickbite-app
+
+      - name: 4. Test Running Built Docker Container
+        run: |
+          echo "======================================================="
+          echo "Khởi chạy container vừa build để kiểm tra hoạt động"
+          echo "======================================================="
+          docker run --rm quickbite-app:test
